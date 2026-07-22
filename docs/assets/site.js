@@ -164,8 +164,8 @@
           <div class="list-id"><strong>${esc(match.match_num_str)}</strong><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
           <div class="scoreline"><span>${esc(match.home_team)}</span><strong>${hasResult(match) ? `${match.score_home} : ${match.score_away}` : "未完赛"}</strong><span>${esc(match.away_team)}</span></div>
           <div class="checks">${hasResult(match) ? `
-            <span class="check ${match.correct_had ? "correct" : "wrong"}">胜平负 ${esc(match.had_outcome_label)}</span>
-            <span class="check ${match.correct_hhad ? "correct" : "wrong"}">让球 ${esc(match.hhad_outcome_label)}</span>` : '<span class="check wait">等待赛果</span>'}
+            <span class="check ${match.correct_had ? "correct" : "missed"}">胜平负 ${esc(match.had_outcome_label)}</span>
+            <span class="check ${match.correct_hhad ? "correct" : "missed"}">让球 ${esc(match.hhad_outcome_label)}</span>` : '<span class="check wait">等待赛果</span>'}
             ${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">分析</button>` : ""}</div>
         </article>`).join("")}</div>
       </section>

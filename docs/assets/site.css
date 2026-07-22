@@ -176,8 +176,8 @@ td small { margin-top: 3px; color: var(--muted); font-size: 8px; }
 .scoreline strong { font-size: 18px; }
 .checks { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
 .check { padding: 5px 7px; border-radius: 4px; font-size: 8px; }
-.check.correct { color: var(--green); background: var(--green-soft); }
-.check.wrong { color: var(--red); background: var(--red-soft); }
+.check.correct { color: var(--red); background: var(--red-soft); font-weight: 750; }
+.check.missed { color: #788496; background: #eef1f5; }
 .check.wait { color: #788496; background: #eef1f5; }
 .report-list { padding: 7px 10px 12px; }
 .report-link { width: 100%; min-height: 52px; padding: 8px; display: flex; align-items: center; gap: 9px; border: 0; border-bottom: 1px solid #edf0f4; color: inherit; background: transparent; text-align: left; text-decoration: none; cursor: pointer; }

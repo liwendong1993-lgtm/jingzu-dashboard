@@ -33,3 +33,12 @@ test("public application never references the writable local API", () => {
   assert.equal(source.includes("/api/actions/"), false);
   assert.equal(source.includes("生成终版"), false);
 });
+
+test("results highlight hits only and keep misses neutral", () => {
+  const script = fs.readFileSync(path.join(docs, "assets/site.js"), "utf8");
+  const styles = fs.readFileSync(path.join(docs, "assets/site.css"), "utf8");
+  assert.match(script, /correct_had \? "correct" : "missed"/);
+  assert.match(script, /correct_hhad \? "correct" : "missed"/);
+  assert.match(styles, /\.check\.correct \{ color: var\(--red\); background: var\(--red-soft\)/);
+  assert.match(styles, /\.check\.missed \{ color: #788496; background: #eef1f5/);
+});
