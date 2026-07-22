@@ -174,8 +174,12 @@ td small { margin-top: 3px; color: var(--muted); font-size: 8px; }
 .result-row:last-child { border-bottom: 0; }
 .scoreline { display: grid; grid-template-columns: 1fr 65px 1fr; align-items: center; gap: 8px; text-align: center; font-size: 11px; font-weight: 700; }
 .scoreline strong { font-size: 18px; }
-.checks { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
-.check { padding: 5px 7px; border-radius: 4px; font-size: 8px; }
+.checks { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.check { min-width: 58px; min-height: 30px; padding: 5px 7px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 5px; font-size: 8px; }
+.check > b { font-size: 11px; font-weight: 500; }
+.check > span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; }
+.check small { color: inherit; font-size: 7px; }
+.check strong { margin-top: 2px; color: inherit; font-size: 8px; }
 .check.correct { color: var(--red); background: var(--red-soft); font-weight: 750; }
 .check.missed { color: #788496; background: #eef1f5; }
 .check.wait { color: #788496; background: #eef1f5; }

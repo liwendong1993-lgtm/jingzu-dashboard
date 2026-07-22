@@ -39,6 +39,11 @@ test("results highlight hits only and keep misses neutral", () => {
   const styles = fs.readFileSync(path.join(docs, "assets/site.css"), "utf8");
   assert.match(script, /correct_had \? "correct" : "missed"/);
   assert.match(script, /correct_hhad \? "correct" : "missed"/);
+  assert.match(script, /strategy_correct \? "correct" : "missed"/);
+  assert.match(script, /match\.strategy_type === "combination" \? "组合" : "单选"/);
+  assert.match(script, /▣ 查看复盘/);
   assert.match(styles, /\.check\.correct \{ color: var\(--red\); background: var\(--red-soft\)/);
   assert.match(styles, /\.check\.missed \{ color: #788496; background: #eef1f5/);
+  assert.equal(styles.includes(".check.wrong"), false);
+  assert.equal(styles.includes(".check.correct { color: var(--green)"), false);
 });
