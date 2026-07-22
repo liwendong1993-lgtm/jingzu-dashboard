@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="竞足比赛预测、赔率、赛果与复盘的公开只读看板" />
+    <meta name="theme-color" content="#10213e" />
+    <title>竞足指挥台｜公开只读看板</title>
+    <link rel="stylesheet" href="assets/site.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="返回最新比赛日">
+        <span class="brand-mark">竞</span>
+        <span><strong>竞足指挥台</strong><small>预测 · 赔率 · 赛果 · 复盘</small></span>
+      </a>
+      <div class="readonly"><i></i><span>公开只读版</span><strong id="syncTime">载入中</strong></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <span class="eyebrow">DAILY FOOTBALL RESEARCH</span>
+          <h1><span id="heroDate">今日</span> 竞足研判</h1>
+          <p id="heroMeta">正在读取公开预测档案…</p>
+        </div>
+        <div class="controls">
+          <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="搜索球队、联赛、场次" /></label>
+          <label class="date-control"><span>日期</span><select id="dateSelect" aria-label="选择比赛日期"></select></label>
+        </div>
+      </section>
+
+      <section class="notice">
+        <span class="notice-icon">只读</span>
+        <div><strong>这是公开展示页面</strong><p>预测在本地完成并锁定后同步；网页不提供生成、修改或结算权限。</p></div>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <nav class="tabs" aria-label="看板视图">
+        <button data-tab="board" class="active">预测 Kanban</button>
+        <button data-tab="schedule">赛程与预测</button>
+        <button data-tab="odds">赔率快照</button>
+        <button data-tab="results">赛果与报告</button>
+      </nav>
+
+      <section id="content" class="content" aria-live="polite">
+        <div class="loading"><span></span><strong>正在读取公开档案</strong><small>同步比赛、赔率与预测记录…</small></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>数据来源：中国体育彩票及报告列明的公开来源</span>
+      <span>概率预测不代表确定赛果，不构成收益承诺</span>
+    </footer>
+
+    <div class="modal-wrap" id="modal" hidden>
+      <button class="modal-shade" data-close aria-label="关闭弹窗"></button>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" data-close aria-label="关闭">×</button>
+        <div id="modalContent"></div>
+      </section>
+    </div>
+
+    <script src="assets/site.js" defer></script>
+  </body>
+</html>
