@@ -10,6 +10,7 @@
   };
   const factorLabels = {
     strength_form: "实力与近期状态",
+    squad_value: "阵容身价与有效比赛实力",
     availability_rotation: "伤病、停赛与轮换",
     motivation_format: "战意与赛制背景",
     tactics_matchup: "战术与对位",
