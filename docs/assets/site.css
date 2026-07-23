@@ -181,6 +181,7 @@ td small { margin-top: 3px; color: var(--muted); font-size: 8px; }
 .check small { color: inherit; font-size: 7px; }
 .check strong { margin-top: 2px; color: inherit; font-size: 8px; }
 .check.correct { color: var(--red); background: var(--red-soft); font-weight: 750; }
+.check.partial { color: #956515; background: #fff2d5; font-weight: 750; }
 .check.missed { color: #788496; background: #eef1f5; }
 .check.wait { color: #788496; background: #eef1f5; }
 .report-list { padding: 7px 10px 12px; }

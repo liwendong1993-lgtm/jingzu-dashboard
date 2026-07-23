@@ -40,6 +40,23 @@
     return `${match.edition === "final" ? "终版" : "初版"} v${match.revision || 1}`;
   };
   const confidenceTone = (match) => match.confidence === "high" ? "green" : match.confidence === "low" ? "gray" : "amber";
+  const strategyResult = (match) => {
+    if (match.strategy_type === "combination") {
+      return match.strategy_correct
+        ? { tone: "correct", symbol: "✓", label: "组合命中" }
+        : { tone: "missed", symbol: "×", label: "组合失败" };
+    }
+    if (match.score_points === 1) return { tone: "correct", symbol: "✓", label: "双项全中" };
+    if (match.score_points === 0) return { tone: "partial", symbol: "•", label: "命中一项" };
+    return { tone: "missed", symbol: "×", label: "两项均错" };
+  };
+  const strategyBadge = (match) => {
+    const result = strategyResult(match);
+    const points = typeof match.score_points === "number"
+      ? `${match.score_points > 0 ? "+" : ""}${match.score_points.toFixed(1)}`
+      : "—";
+    return `<span class="check ${result.tone}"><b>${result.symbol}</b><span><small>${esc(result.label)}</small><strong>${points}</strong></span></span>`;
+  };
 
   function filteredMatches() {
     const query = state.query.trim().toLowerCase();
@@ -146,7 +163,7 @@
 
   function reportItems() {
     const pdfs = (state.data.pdf_reports || []).map((report) => `
-      <a class="report-link" href="${encodeURI(report.public_url || "#")}" target="_blank" rel="noopener">
+      <a class="report-link" href="${encodeURI(report.public_url || "#")}">
         <span class="report-icon pdf">PDF</span><span><strong>${esc(report.title)}</strong><small>${esc(formatTime(report.modified_at))} · ${(report.size_bytes / 1024).toFixed(0)} KB</small></span>
       </a>`);
     const reports = (state.data.reports || []).map((report) => `
@@ -166,7 +183,7 @@
           <div class="checks">${hasResult(match) ? `
             <span class="check ${match.correct_had ? "correct" : "missed"}"><b>${match.correct_had ? "✓" : "×"}</b><span><small>胜平负</small><strong>${esc(match.had_outcome_label)}</strong></span></span>
             <span class="check ${match.correct_hhad ? "correct" : "missed"}"><b>${match.correct_hhad ? "✓" : "×"}</b><span><small>让球</small><strong>${esc(match.hhad_outcome_label)}</strong></span></span>
-            ${match.reviewed ? `<span class="check ${match.strategy_correct ? "correct" : "missed"}"><b>${match.strategy_correct ? "✓" : "×"}</b><span><small>${match.strategy_type === "combination" ? "组合" : "单选"}</small><strong>${typeof match.score_points === "number" ? `${match.score_points > 0 ? "+" : ""}${match.score_points.toFixed(1)}` : "—"}</strong></span></span>` : ""}` : '<span class="check wait">等待赛果</span>'}
+            ${match.reviewed ? strategyBadge(match) : ""}` : '<span class="check wait">等待赛果</span>'}
             ${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">▣ 查看复盘</button>` : ""}</div>
         </article>`).join("")}</div>
       </section>
@@ -237,7 +254,9 @@
       const body = `<span class="reliability ${item.reliability === "official" ? "official" : ""}">${esc(item.reliability || "来源")}</span><span><strong>${esc(item.source_title)}</strong><p>${esc(item.claim)}</p></span>`;
       return item.source_url ? `<a href="${esc(item.source_url)}" target="_blank" rel="noopener">${body}</a>` : `<div>${body}</div>`;
     }).join("");
-    const review = match.review_note ? `<article class="analysis-box full"><h4>赛后复盘</h4><p>${esc(match.review_note)}</p>${match.review_lesson ? `<p><strong>候选经验：</strong>${esc(match.review_lesson.replace(/^候选经验[:：]\s*/, ""))}</p>` : ""}</article>` : "";
+    const reviewResult = strategyResult(match);
+    const reviewPoints = typeof match.score_points === "number" ? `${match.score_points > 0 ? "+" : ""}${match.score_points.toFixed(1)} 分` : "";
+    const review = match.review_note ? `<article class="analysis-box full"><h4>赛后复盘 · ${esc(reviewResult.label)} ${reviewPoints}</h4><p>${esc(match.review_note)}</p>${match.review_lesson ? `<p><strong>候选经验：</strong>${esc(match.review_lesson.replace(/^候选经验[:：]\s*/, ""))}</p>` : ""}</article>` : "";
     const combination = detail.combination ? `<article class="analysis-box full"><h4>覆盖策略</h4><p>${esc(detail.combination.selections.map((item) => `${item.label} ${item.units}注`).join(" + "))}；覆盖概率 ${pct(detail.combination.covered_probability)}。${esc(detail.combination.rationale || "")}</p></article>` : "";
 
     $("#modalContent").innerHTML = `
