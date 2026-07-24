@@ -34,6 +34,19 @@
   const executionTier = (match) => match.analysis_detail?.execution_tier || (match.no_bet ? "C" : "B");
   const executionLabel = (match) => ({ A: "A重点推荐 · 1单位", B: "B值得关注 · 0.5单位", C: "C观望 · 0单位" })[executionTier(match)];
   const executionClass = (match) => `tier-${executionTier(match).toLowerCase()}`;
+  const primarySelection = (match) => {
+    const saved = match.analysis_detail?.primary_selection;
+    if (saved?.market && saved?.outcome) return saved;
+    const hadOutcome = marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a]);
+    const hhadOutcome = marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a]);
+    const hadProbability = ({ H: match.prob_had_h, D: match.prob_had_d, A: match.prob_had_a })[hadOutcome] ?? -1;
+    const hhadProbability = ({ H: match.prob_hhad_h, D: match.prob_hhad_d, A: match.prob_hhad_a })[hhadOutcome] ?? -1;
+    return hhadProbability > hadProbability
+      ? { market: "hhad", outcome: hhadOutcome }
+      : { market: "had", outcome: hadOutcome };
+  };
+  const selectionClass = (match, market) => primarySelection(match).market === market ? `primary-selection ${executionClass(match)}` : "reference-selection";
+  const selectionCaption = (match, market, label) => `${primarySelection(match).market === market ? "核心方案" : "概率参考"} · ${label}`;
   const handicap = (value) => value > 0 ? `+${value}` : String(value ?? "—");
   const hasResult = (match) => Number.isFinite(match.score_home) && Number.isFinite(match.score_away);
   const formatDate = (value) => {
@@ -99,7 +112,7 @@
   function renderCard(match) {
     const detail = match.analysis_detail ? "查看完整分析" : "暂无分析详情";
     return `
-      <button class="match-card ${match.prediction_id ? executionClass(match) : ""}" data-match="${match.match_id}" ${match.analysis_detail ? "" : "disabled"}>
+      <button class="match-card" data-match="${match.match_id}" ${match.analysis_detail ? "" : "disabled"}>
         <div class="card-top"><span>${esc(match.match_num_str)}</span><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
         <div class="teams">
           <div><small>${esc(match.home_rank || "")}</small><strong title="${esc(match.home_team)}">${esc(match.home_team)}</strong></div>
@@ -107,8 +120,8 @@
           <div><small>${esc(match.away_rank || "")}</small><strong title="${esc(match.away_team)}">${esc(match.away_team)}</strong></div>
         </div>
         <div class="picks">
-          <span class="pick"><small>胜平负方向</small><strong>${esc(hadDirection(match))}</strong></span>
-          <span class="pick"><small>${esc(handicap(match.goal_line))} 让球方向</small><strong>${esc(hhadDirection(match))}</strong></span>
+          <span class="pick ${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span>
+          <span class="pick ${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span>
         </div>
         ${probabilityBar([match.prob_had_h, match.prob_had_d, match.prob_had_a])}
         <div class="card-foot"><small>${esc(detail)}</small><span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span></div>
@@ -129,12 +142,12 @@
   function renderSchedule(matches) {
     return `<section class="panel">
       <header class="panel-head"><div><h2>赛程与已锁定预测</h2><p>同屏查看开球时间、两种玩法和预测概率</p></div><span>${matches.length} 场</span></header>
-      <div>${matches.map((match) => `<article class="list-row ${match.prediction_id ? executionClass(match) : ""}">
+      <div>${matches.map((match) => `<article class="list-row">
         <div class="list-id"><strong>${esc(match.match_num_str)}</strong><span>${esc(String(match.match_time || "").slice(0, 5))}</span><small>${esc(match.league_name)}</small></div>
         <div class="list-teams">${esc(match.home_team)} <span>vs</span> ${esc(match.away_team)}</div>
         <div class="list-picks">
-          <span class="mini-pick"><small>胜平负方向</small><strong>${esc(hadDirection(match))}</strong></span>
-          <span class="mini-pick"><small>${esc(handicap(match.goal_line))} 让球方向</small><strong>${esc(hhadDirection(match))}</strong></span>
+          <span class="mini-pick ${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span>
+          <span class="mini-pick ${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span>
           <span class="prob-copy">胜 ${pct(match.prob_had_h)} · 平 ${pct(match.prob_had_d)} · 负 ${pct(match.prob_had_a)}</span>
         </div>
         <div class="list-state">${match.prediction_id ? `<span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span>` : ""}<span class="badge blue">${esc(editionLabel(match))}</span>${hasResult(match) ? `<strong>${match.score_home} : ${match.score_away}</strong>` : ""}${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">完整分析</button>` : ""}</div>
@@ -276,7 +289,7 @@
       </header>
       <div class="modal-body">
         ${review}
-        <section class="summary"><div><small>联动主情景</small><h3>${esc(match.pick_had_label)} / ${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>两种玩法来自同一可实现净胜球情景。</p></div><div class="summary-picks"><span><small>胜平负方向</small><strong>${esc(hadDirection(match))}</strong></span><span><small>让球方向</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
+        <section class="summary"><div><small>联动主情景</small><h3>${esc(match.pick_had_label)} / ${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>两种玩法来自同一可实现净胜球情景。</p></div><div class="summary-picks"><span class="${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span><span class="${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
         <section class="analysis-grid">
           <article class="analysis-box full"><h4>核心判断</h4><p>${esc(detail.rationale || match.rationale)}</p></article>
           ${analysisProbability("胜平负概率", [match.prob_had_h, match.prob_had_d, match.prob_had_a])}
