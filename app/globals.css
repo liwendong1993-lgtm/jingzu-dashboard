@@ -117,9 +117,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .kanban-column.green .column-head > strong { background: #e0f4ec; color: var(--green); }
 .column-body { padding: 10px; display: flex; flex-direction: column; gap: 9px; }
 .match-card { padding: 13px; background: #fff; border: 1px solid #dfe4ec; border-radius: 7px; box-shadow: 0 2px 7px rgba(25,43,73,.035); }
-.match-card.tier-a { border-color: var(--tier-a); border-top-width: 4px; background: #fffafa; box-shadow: 0 7px 18px rgba(230,0,18,.14); }
-.match-card.tier-b { border-color: #f0a6ac; border-top-width: 3px; background: #fffafa; }
-.match-card.tier-c { border-color: #f2cbd4; border-top-width: 3px; background: #fff8fa; }
 .match-card-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; }
 .match-number { font-size: 11px; font-weight: 800; color: var(--ink); }
 .league-pill { width: max-content; max-width: 100%; padding: 2px 6px; border-radius: 3px; background: #f0f2f6; color: #778296; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -139,6 +136,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .prediction-row div + div { border-left: 1px solid #edf0f4; }
 .prediction-row small { color: #8a94a4; font-size: 8px; }
 .prediction-row strong { font-size: 12px; }
+.prediction-row .primary-selection.tier-a, .pick-chip.primary-selection.tier-a, .analysis-picks .primary-selection.tier-a { color: #fff; border-color: var(--tier-a); background: var(--tier-a); box-shadow: 0 4px 12px rgba(230,0,18,.2); }
+.prediction-row .primary-selection.tier-b, .pick-chip.primary-selection.tier-b, .analysis-picks .primary-selection.tier-b { color: var(--tier-b); border-color: #ef9da4; background: var(--tier-b-soft); }
+.prediction-row .primary-selection.tier-c, .pick-chip.primary-selection.tier-c, .analysis-picks .primary-selection.tier-c { color: var(--tier-c); border-color: #efbdc9; background: var(--tier-c-soft); }
+.prediction-row .primary-selection small, .pick-chip.primary-selection small, .analysis-picks .primary-selection small { color: inherit; font-weight: 800; }
+.prediction-row .primary-selection strong, .pick-chip.primary-selection strong, .analysis-picks .primary-selection strong { color: inherit; }
+.reference-selection { opacity: .72; }
 .empty-prediction { min-height: 54px; padding: 0 12px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px dashed #ccd3de; border-radius: 6px; color: #8a95a5; background: #fafbfc; font-size: 10px; text-align: center; }
 .score-line { padding: 11px; background: #f6f8fb; border-radius: 6px; display: flex; align-items: center; gap: 7px; font-size: 17px; font-weight: 800; }
 .score-line svg { color: var(--amber); }
@@ -165,9 +168,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .panel-head > span { color: var(--muted); font-size: 10px; }
 .schedule-list { display: flex; flex-direction: column; }
 .schedule-row { min-height: 98px; padding: 14px 20px; display: grid; grid-template-columns: 115px minmax(250px, 1.1fr) minmax(370px, 1.6fr) 100px; align-items: center; gap: 18px; border-bottom: 1px solid #edf0f4; }
-.schedule-row.tier-a { box-shadow: inset 4px 0 0 var(--tier-a); background: #fffafa; }
-.schedule-row.tier-b { box-shadow: inset 4px 0 0 #ed8e96; background: #fffbfb; }
-.schedule-row.tier-c { box-shadow: inset 4px 0 0 #efbbc8; background: #fff8fa; }
 .schedule-row:last-child { border-bottom: 0; }
 .schedule-row:hover { background: #fbfcfe; }
 .schedule-id { display: flex; flex-direction: column; gap: 3px; }

@@ -49,6 +49,10 @@ type AnalysisEvidence = {
 type AnalysisDetail = {
   schema_version?: number;
   execution_tier?: "A" | "B" | "C";
+  primary_selection?: {
+    market: "had" | "hhad";
+    outcome: "H" | "D" | "A";
+  };
   rationale: string;
   risks: string[];
   factors: Record<string, string>;
@@ -266,6 +270,26 @@ function executionClass(match: Match) {
   return `tier-${executionTier(match).toLowerCase()}`;
 }
 
+function primarySelection(match: Match): { market: "had" | "hhad"; outcome: "H" | "D" | "A" } {
+  const saved = match.analysis_detail?.primary_selection;
+  if (saved?.market && saved?.outcome) return saved;
+  const hadOutcome = marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a]);
+  const hhadOutcome = marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a]);
+  const hadProbability = { H: match.prob_had_h, D: match.prob_had_d, A: match.prob_had_a }[hadOutcome] ?? -1;
+  const hhadProbability = { H: match.prob_hhad_h, D: match.prob_hhad_d, A: match.prob_hhad_a }[hhadOutcome] ?? -1;
+  return hhadProbability > hadProbability
+    ? { market: "hhad", outcome: hhadOutcome }
+    : { market: "had", outcome: hadOutcome };
+}
+
+function selectionClass(match: Match, market: "had" | "hhad") {
+  return primarySelection(match).market === market ? `primary-selection ${executionClass(match)}` : "reference-selection";
+}
+
+function selectionCaption(match: Match, market: "had" | "hhad", label: string) {
+  return `${primarySelection(match).market === market ? "核心方案" : "概率参考"} · ${label}`;
+}
+
 function movement(current?: number, first?: number) {
   if (typeof current !== "number" || typeof first !== "number") return null;
   const delta = current - first;
@@ -361,7 +385,7 @@ function AnalysisButton({ match, onOpen, compact = false }: { match: Match; onOp
 
 function StageCard({ match, onOpenAnalysis }: { match: Match; onOpenAnalysis: (match: Match) => void }) {
   return (
-    <article className={`match-card ${match.prediction_id ? executionClass(match) : ""}`}>
+    <article className="match-card">
       <div className="match-card-head">
         <span className="match-number">{match.match_num_str}</span>
         <span className="league-pill">{match.league_name}</span>
@@ -378,8 +402,8 @@ function StageCard({ match, onOpenAnalysis }: { match: Match; onOpenAnalysis: (m
         <>
           <ProbabilityStrip values={[match.prob_had_h, match.prob_had_d, match.prob_had_a]} />
           <div className="prediction-row">
-            <div><small>胜平负方向</small><strong>{hadDirection(match)}</strong></div>
-            <div><small>{match.goal_line > 0 ? `+${match.goal_line}` : match.goal_line} 让球方向</small><strong>{hhadDirection(match)}</strong></div>
+            <div className={selectionClass(match, "had")}><small>{selectionCaption(match, "had", "胜平负")}</small><strong>{hadDirection(match)}</strong></div>
+            <div className={selectionClass(match, "hhad")}><small>{selectionCaption(match, "hhad", `${match.goal_line > 0 ? `+${match.goal_line}` : match.goal_line} 让球`)}</small><strong>{hhadDirection(match)}</strong></div>
             <div><small>置信度</small><strong>{match.confidence_label}</strong></div>
           </div>
         </>
@@ -600,11 +624,11 @@ export default function Home() {
               <div className="panel-head"><div><h3>赛程与已锁定预测</h3><p>同屏查看开球时间、两种玩法和预测概率</p></div><span>{filteredMatches.length} 场</span></div>
               <div className="schedule-list">
                 {filteredMatches.map((match) => (
-                  <article className={`schedule-row ${match.prediction_id ? executionClass(match) : ""}`} key={match.match_id}>
+                  <article className="schedule-row" key={match.match_id}>
                     <div className="schedule-id"><strong>{match.match_num_str}</strong><span>{match.match_time}</span><small>{match.league_name}</small></div>
                     <div className="schedule-teams"><div><small>{match.home_rank}</small><strong>{match.home_team}</strong></div><span>vs</span><div><small>{match.away_rank}</small><strong>{match.away_team}</strong></div></div>
                     <div className="schedule-prediction">
-                      {match.prediction_id ? <><div className="pick-chip"><small>胜平负方向</small><strong>{hadDirection(match)}</strong></div><div className="pick-chip"><small>{match.goal_line > 0 ? `+${match.goal_line}` : match.goal_line} 让球方向</small><strong>{hhadDirection(match)}</strong></div><div className="prob-stack"><ProbabilityStrip values={[match.prob_had_h, match.prob_had_d, match.prob_had_a]} /><small>胜 {pct(match.prob_had_h)} · 平 {pct(match.prob_had_d)} · 负 {pct(match.prob_had_a)}</small></div></> : <span className="not-ready">等待预测</span>}
+                      {match.prediction_id ? <><div className={`pick-chip ${selectionClass(match, "had")}`}><small>{selectionCaption(match, "had", "胜平负")}</small><strong>{hadDirection(match)}</strong></div><div className={`pick-chip ${selectionClass(match, "hhad")}`}><small>{selectionCaption(match, "hhad", `${match.goal_line > 0 ? `+${match.goal_line}` : match.goal_line} 让球`)}</small><strong>{hhadDirection(match)}</strong></div><div className="prob-stack"><ProbabilityStrip values={[match.prob_had_h, match.prob_had_d, match.prob_had_a]} /><small>胜 {pct(match.prob_had_h)} · 平 {pct(match.prob_had_d)} · 负 {pct(match.prob_had_a)}</small></div></> : <span className="not-ready">等待预测</span>}
                     </div>
                     <div className="schedule-status">{match.prediction_id && <span className={`execution-badge ${executionClass(match)}`}>{executionLabel(match)}</span>}<span className={`edition-badge ${match.edition || "none"}`}>{editionLabel(match)}</span>{hasResult(match) && <strong>{match.score_home} : {match.score_away}</strong>}<AnalysisButton match={match} onOpen={setSelectedMatch} compact /></div>
                   </article>
@@ -680,7 +704,7 @@ export default function Home() {
               </section>}
               <section className="analysis-summary">
                 <div><small>联动主情景</small><strong>{selectedMatch.pick_had_label} / 让{selectedMatch.pick_hhad_label}</strong><p>两种玩法来自同一净胜球情景，不做互相冲突的独立拼接。</p></div>
-                <div className="analysis-picks"><span><small>胜平负方向</small><strong>{hadDirection(selectedMatch)}</strong></span><span><small>{selectedMatch.goal_line > 0 ? `+${selectedMatch.goal_line}` : selectedMatch.goal_line} 让球方向</small><strong>{hhadDirection(selectedMatch)}</strong></span><span><small>执行</small><strong>{executionLabel(selectedMatch)}</strong></span></div>
+                <div className="analysis-picks"><span className={selectionClass(selectedMatch, "had")}><small>{selectionCaption(selectedMatch, "had", "胜平负")}</small><strong>{hadDirection(selectedMatch)}</strong></span><span className={selectionClass(selectedMatch, "hhad")}><small>{selectionCaption(selectedMatch, "hhad", `${selectedMatch.goal_line > 0 ? `+${selectedMatch.goal_line}` : selectedMatch.goal_line} 让球`)}</small><strong>{hhadDirection(selectedMatch)}</strong></span><span><small>执行</small><strong>{executionLabel(selectedMatch)}</strong></span></div>
               </section>
 
               {selectedMatch.analysis_detail.combination && (() => {
@@ -697,8 +721,8 @@ export default function Home() {
               <section className="analysis-section"><div className="analysis-section-title"><BookOpen size={17} /><h4>核心判断</h4></div><p className="analysis-rationale">{selectedMatch.analysis_detail.rationale}</p></section>
 
               <section className="analysis-probabilities">
-                <article><div><h4>胜平负概率</h4><span>单市场方向 {hadDirection(selectedMatch)}</span></div><ProbabilityStrip values={[selectedMatch.prob_had_h, selectedMatch.prob_had_d, selectedMatch.prob_had_a]} /><p>胜 {pct(selectedMatch.prob_had_h)} · 平 {pct(selectedMatch.prob_had_d)} · 负 {pct(selectedMatch.prob_had_a)}</p></article>
-                <article><div><h4>{selectedMatch.goal_line > 0 ? `+${selectedMatch.goal_line}` : selectedMatch.goal_line} 让球概率</h4><span>单市场方向 {hhadDirection(selectedMatch)}</span></div><ProbabilityStrip labels={["让胜", "让平", "让负"]} values={[selectedMatch.prob_hhad_h, selectedMatch.prob_hhad_d, selectedMatch.prob_hhad_a]} /><p>让胜 {pct(selectedMatch.prob_hhad_h)} · 让平 {pct(selectedMatch.prob_hhad_d)} · 让负 {pct(selectedMatch.prob_hhad_a)}</p></article>
+                <article><div><h4>胜平负概率</h4><span>概率最高项 {hadDirection(selectedMatch)}</span></div><ProbabilityStrip values={[selectedMatch.prob_had_h, selectedMatch.prob_had_d, selectedMatch.prob_had_a]} /><p>胜 {pct(selectedMatch.prob_had_h)} · 平 {pct(selectedMatch.prob_had_d)} · 负 {pct(selectedMatch.prob_had_a)}</p></article>
+                <article><div><h4>{selectedMatch.goal_line > 0 ? `+${selectedMatch.goal_line}` : selectedMatch.goal_line} 让球概率</h4><span>概率最高项 {hhadDirection(selectedMatch)}</span></div><ProbabilityStrip labels={["让胜", "让平", "让负"]} values={[selectedMatch.prob_hhad_h, selectedMatch.prob_hhad_d, selectedMatch.prob_hhad_a]} /><p>让胜 {pct(selectedMatch.prob_hhad_h)} · 让平 {pct(selectedMatch.prob_hhad_d)} · 让负 {pct(selectedMatch.prob_hhad_a)}</p></article>
               </section>
 
               {Object.keys(selectedMatch.analysis_detail.joint_probabilities).length > 0 && <section className="analysis-section"><div className="analysis-section-title"><BarChart3 size={17} /><h4>可同时命中的联合情景</h4></div><div className="joint-grid">{Object.entries(selectedMatch.analysis_detail.joint_probabilities).sort((a, b) => b[1] - a[1]).map(([key, value], index) => <div className={index === 0 ? "top" : ""} key={key}><span>{jointLabel(key)}</span><strong>{pct(value)}</strong></div>)}</div></section>}
