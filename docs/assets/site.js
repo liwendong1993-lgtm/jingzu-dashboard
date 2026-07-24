@@ -32,7 +32,8 @@
   const hadDirection = (match) => ({ H: "胜", D: "平", A: "负" })[marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a])];
   const hhadDirection = (match) => `让${({ H: "胜", D: "平", A: "负" })[marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])]}`;
   const executionTier = (match) => match.analysis_detail?.execution_tier || (match.no_bet ? "C" : "B");
-  const executionLabel = (match) => ({ A: "A重点 · 1单位", B: "B轻仓 · 0.5单位", C: "C不执行 · 0单位" })[executionTier(match)];
+  const executionLabel = (match) => ({ A: "A重点推荐 · 1单位", B: "B值得关注 · 0.5单位", C: "C观望 · 0单位" })[executionTier(match)];
+  const executionClass = (match) => `tier-${executionTier(match).toLowerCase()}`;
   const handicap = (value) => value > 0 ? `+${value}` : String(value ?? "—");
   const hasResult = (match) => Number.isFinite(match.score_home) && Number.isFinite(match.score_away);
   const formatDate = (value) => {
@@ -98,7 +99,7 @@
   function renderCard(match) {
     const detail = match.analysis_detail ? "查看完整分析" : "暂无分析详情";
     return `
-      <button class="match-card" data-match="${match.match_id}" ${match.analysis_detail ? "" : "disabled"}>
+      <button class="match-card ${match.prediction_id ? executionClass(match) : ""}" data-match="${match.match_id}" ${match.analysis_detail ? "" : "disabled"}>
         <div class="card-top"><span>${esc(match.match_num_str)}</span><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
         <div class="teams">
           <div><small>${esc(match.home_rank || "")}</small><strong title="${esc(match.home_team)}">${esc(match.home_team)}</strong></div>
@@ -110,7 +111,7 @@
           <span class="pick"><small>${esc(handicap(match.goal_line))} 让球方向</small><strong>${esc(hhadDirection(match))}</strong></span>
         </div>
         ${probabilityBar([match.prob_had_h, match.prob_had_d, match.prob_had_a])}
-        <div class="card-foot"><small>${esc(detail)}</small><span class="badge ${executionTier(match) === "A" ? "green" : "gray"}">${esc(executionLabel(match))}</span></div>
+        <div class="card-foot"><small>${esc(detail)}</small><span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span></div>
       </button>`;
   }
 
@@ -128,7 +129,7 @@
   function renderSchedule(matches) {
     return `<section class="panel">
       <header class="panel-head"><div><h2>赛程与已锁定预测</h2><p>同屏查看开球时间、两种玩法和预测概率</p></div><span>${matches.length} 场</span></header>
-      <div>${matches.map((match) => `<article class="list-row">
+      <div>${matches.map((match) => `<article class="list-row ${match.prediction_id ? executionClass(match) : ""}">
         <div class="list-id"><strong>${esc(match.match_num_str)}</strong><span>${esc(String(match.match_time || "").slice(0, 5))}</span><small>${esc(match.league_name)}</small></div>
         <div class="list-teams">${esc(match.home_team)} <span>vs</span> ${esc(match.away_team)}</div>
         <div class="list-picks">
@@ -136,7 +137,7 @@
           <span class="mini-pick"><small>${esc(handicap(match.goal_line))} 让球方向</small><strong>${esc(hhadDirection(match))}</strong></span>
           <span class="prob-copy">胜 ${pct(match.prob_had_h)} · 平 ${pct(match.prob_had_d)} · 负 ${pct(match.prob_had_a)}</span>
         </div>
-        <div class="list-state"><span class="badge blue">${esc(editionLabel(match))}</span>${hasResult(match) ? `<strong>${match.score_home} : ${match.score_away}</strong>` : ""}${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">完整分析</button>` : ""}</div>
+        <div class="list-state">${match.prediction_id ? `<span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span>` : ""}<span class="badge blue">${esc(editionLabel(match))}</span>${hasResult(match) ? `<strong>${match.score_home} : ${match.score_away}</strong>` : ""}${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">完整分析</button>` : ""}</div>
       </article>`).join("") || '<div class="empty"><strong>没有匹配的比赛</strong><small>请调整搜索条件</small></div>'}</div>
     </section>`;
   }
@@ -271,7 +272,7 @@
       <header class="modal-head">
         <div class="modal-kicker"><span>${esc(match.match_num_str)}</span><span>${esc(match.league_name)}</span><span>${esc(String(match.match_time || "").slice(0, 5))}</span></div>
         <h2 id="modalTitle">${esc(match.home_team)} <span>vs</span> ${esc(match.away_team)}</h2>
-        <div class="modal-meta"><span class="badge blue">${esc(editionLabel(match))}</span><span class="badge ${executionTier(match) === "A" ? "green" : "gray"}">${esc(executionLabel(match))}</span><span class="badge gray">信息截止 ${esc(formatTime(detail.info_cutoff))}</span></div>
+        <div class="modal-meta"><span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span><span class="badge blue">${esc(editionLabel(match))}</span><span class="badge gray">信息截止 ${esc(formatTime(detail.info_cutoff))}</span></div>
       </header>
       <div class="modal-body">
         ${review}
