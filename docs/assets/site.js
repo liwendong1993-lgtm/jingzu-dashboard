@@ -15,6 +15,7 @@
     motivation_format: "战意与赛制背景",
     tactics_matchup: "战术与对位",
     schedule_environment: "赛程与比赛环境",
+    k_league_offfield: "韩职场外博弈实验",
     market_movement: "赔率与市场变化",
   };
 
@@ -107,6 +108,29 @@
       <article class="metric"><div><small>已完赛 / 已复盘</small><strong class="green">${settled.length}<em> / ${reviewed.length}</em></strong></div><p>赛果归档后沉淀经验</p></article>
       <article class="metric"><div><small>策略命中率</small><strong class="amber">${reviewed.length ? pct(correct / reviewed.length) : "—"}</strong></div><p>${reviewed.length ? `累计积分 ${score >= 0 ? "+" : ""}${score.toFixed(1)}` : "等待结算样本"}</p></article>
       <article class="metric"><div><small>官方赔率快照</small><strong>${data.latest_snapshot ? "已同步" : "暂无"}</strong></div><p>${esc(formatTime(data.latest_snapshot))}</p></article>`;
+  }
+
+  function renderBettingPlan() {
+    const plan = state.data?.betting_plan;
+    const root = $("#bettingPlan");
+    if (!plan) {
+      root.hidden = true;
+      root.innerHTML = "";
+      return;
+    }
+    const label = (outcome, hhad) => hhad
+      ? ({ H: "让胜", D: "让平", A: "让负" })[outcome]
+      : ({ H: "胜", D: "平", A: "负" })[outcome];
+    root.hidden = false;
+    root.innerHTML = `
+      <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
+      ${plan.anchor_status === "no_qualified_candidate" ? `<div class="plan-empty">今日无合格低波动2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      <div class="ticket-grid">${(plan.tickets || []).map((ticket) => `<article>
+        <div><span>${ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
+        <p>${ticket.legs.map((leg) => `${esc(leg.match_num || leg.match_id)} ${leg.market === "had" ? "胜平负" : "让球"}${leg.selections.map((outcome) => label(outcome, leg.market === "hhad")).join("+")}`).join(" × ")}</p>
+        <small>${ticket.multiplier}倍 · ${ticket.line_count}条线 · 投入 ¥${Number(ticket.stake_yuan).toFixed(2)}</small>
+        <footer><span>覆盖 ${pct(ticket.combined_coverage_probability)}</span><span>期望 ${ticket.expected_profit_yuan >= 0 ? "+" : ""}¥${Number(ticket.expected_profit_yuan).toFixed(2)}</span><span>命中利润 ¥${Number(ticket.winning_profit_min_yuan).toFixed(2)}～¥${Number(ticket.winning_profit_max_yuan).toFixed(2)}</span></footer>
+      </article>`).join("")}</div>`;
   }
 
   function renderCard(match) {
@@ -248,6 +272,7 @@
       $("#dateSelect").value = dateValue;
       renderHeader();
       renderMetrics();
+      renderBettingPlan();
       renderContent();
       const url = new URL(window.location.href);
       url.searchParams.set("date", dateValue);
