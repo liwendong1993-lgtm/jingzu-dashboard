@@ -106,7 +106,7 @@
     $("#metrics").innerHTML = `
       <article class="metric"><div><small>当日场次</small><strong class="accent">${matches.length}</strong></div><p>${esc(primary)}</p></article>
       <article class="metric"><div><small>已完赛 / 已复盘</small><strong class="green">${settled.length}<em> / ${reviewed.length}</em></strong></div><p>赛果归档后沉淀经验</p></article>
-      <article class="metric"><div><small>策略命中率</small><strong class="amber">${reviewed.length ? pct(correct / reviewed.length) : "—"}</strong></div><p>${reviewed.length ? `累计积分 ${score >= 0 ? "+" : ""}${score.toFixed(1)}` : "等待结算样本"}</p></article>
+      <article class="metric"><div><small>真实资金余额</small><strong class="amber">¥${Number(data.betting_plan?.bankroll_after ?? data.betting_plan?.bankroll_before ?? 100).toFixed(2)}</strong></div><p>${data.betting_plan ? `当日净利 ${Number.isFinite(data.betting_plan.net_profit_yuan) && data.betting_plan.net_profit_yuan >= 0 ? "+" : ""}${Number.isFinite(data.betting_plan.net_profit_yuan) ? Number(data.betting_plan.net_profit_yuan).toFixed(2) : "待结算"} 元` : "初始资金100元 · 目标1000元"}</p></article>
       <article class="metric"><div><small>官方赔率快照</small><strong>${data.latest_snapshot ? "已同步" : "暂无"}</strong></div><p>${esc(formatTime(data.latest_snapshot))}</p></article>`;
   }
 
