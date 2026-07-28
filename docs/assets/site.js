@@ -64,13 +64,9 @@
     return `${match.edition === "final" ? "终版" : "初版"} v${match.revision || 1}`;
   };
   const strategyResult = (match) => {
-    if (match.strategy_type === "combination") {
-      return match.strategy_correct
-        ? { tone: "correct", symbol: "✓", label: "组合命中" }
-        : { tone: "missed", symbol: "×", label: "组合失败" };
-    }
     if (match.score_points === 1) return { tone: "correct", symbol: "✓", label: "双项全中" };
-    if (match.score_points === 0) return { tone: "partial", symbol: "•", label: "命中一项" };
+    if (match.score_points === 0.5) return { tone: "correct", symbol: "✓", label: "高亮命中" };
+    if (match.score_points === -0.5) return { tone: "partial", symbol: "•", label: "仅参考项命中" };
     return { tone: "missed", symbol: "×", label: "两项均错" };
   };
   const strategyBadge = (match) => {
@@ -123,7 +119,7 @@
       : ({ H: "胜", D: "平", A: "负" })[outcome];
     root.hidden = false;
     root.innerHTML = `
-      <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
+      <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}${Number(plan.daily_score_bonus_points || 0) ? ` · 稳单奖励 +${Number(plan.daily_score_bonus_points).toFixed(0)}分` : ""}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
       ${plan.anchor_status === "no_qualified_candidate" ? `<div class="plan-empty">今日无合格低波动2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       <div class="ticket-grid">${(plan.tickets || []).map((ticket) => `<article>
         <div><span>${ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
