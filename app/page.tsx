@@ -173,7 +173,7 @@ type PdfReport = Report & { size_bytes: number };
 
 type BettingTicket = {
   ticket_id: string;
-  type: "anchor" | "growth" | "longshot";
+  type: "single" | "fallback_parlay" | "anchor" | "growth" | "longshot";
   label: string;
   multiplier: number;
   line_count: number;
@@ -195,7 +195,7 @@ type BettingTicket = {
 type BettingPlan = {
   bankroll_before: number;
   target_bankroll: number;
-  anchor_status: "qualified" | "no_qualified_candidate" | "not_required";
+  anchor_status: "qualified" | "fallback_single" | "fallback_parlay" | "no_legal_wager";
   anchor_reason?: string;
   total_stake_yuan: number;
   max_daily_stake_yuan: number;
@@ -631,11 +631,13 @@ export default function Home() {
             <div><span className="section-label"><ShieldCheck size={14} /> 当日投注建议</span><h3>真实资金账本</h3><p>赛前余额 ¥{data.betting_plan.bankroll_before.toFixed(2)} · 当日投入 ¥{data.betting_plan.total_stake_yuan.toFixed(2)} · 目标 ¥{data.betting_plan.target_bankroll.toFixed(0)}{data.betting_plan.daily_score_bonus_points ? ` · 稳单奖励 +${data.betting_plan.daily_score_bonus_points.toFixed(0)}分` : ""}</p></div>
             <strong>{data.betting_plan.bankroll_after !== undefined ? `赛后 ¥${data.betting_plan.bankroll_after.toFixed(2)}` : `风险 ${(data.betting_plan.total_stake_yuan / data.betting_plan.bankroll_before * 100 || 0).toFixed(1)}%`}</strong>
           </div>
-          {data.betting_plan.anchor_status === "no_qualified_candidate" && <div className="betting-plan-empty"><AlertTriangle size={17} /><span>今日无合格低波动2串1：{data.betting_plan.anchor_reason}</span></div>}
+          {data.betting_plan.anchor_status === "fallback_single" && <div className="betting-plan-empty"><AlertTriangle size={17} /><span>2串1未通过稳健性筛选，已改用最低2元单关：{data.betting_plan.anchor_reason}</span></div>}
+          {data.betting_plan.anchor_status === "fallback_parlay" && <div className="betting-plan-empty"><AlertTriangle size={17} /><span>没有合格2串1且无合法单关，已改用最低2元普通2串1：{data.betting_plan.anchor_reason}</span></div>}
+          {data.betting_plan.anchor_status === "no_legal_wager" && <div className="betting-plan-empty"><AlertTriangle size={17} /><span>今日没有合法可出票方案：{data.betting_plan.anchor_reason}</span></div>}
           <div className="betting-ticket-grid">
             {data.betting_plan.tickets.map((ticket) => (
               <article key={ticket.ticket_id}>
-                <div><span>{ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>{ticket.label}</strong></div>
+                <div><span>{ticket.type === "single" ? "单关保底" : ticket.type === "fallback_parlay" ? "最低投入2串1" : ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>{ticket.label}</strong></div>
                 <p>{ticket.legs.map((leg) => `${leg.match_num || leg.match_id} ${leg.market === "had" ? "胜平负" : "让球"}${leg.selections.map((outcome) => pickLabel(outcome, leg.market === "hhad")).join("+")}`).join(" × ")}</p>
                 <small>{ticket.multiplier}倍 · {ticket.line_count}条线 · 投入 ¥{ticket.stake_yuan.toFixed(2)}</small>
                 <footer><span>覆盖 {pct(ticket.combined_coverage_probability)}</span><span>期望 {ticket.expected_profit_yuan >= 0 ? "+" : ""}¥{ticket.expected_profit_yuan.toFixed(2)}</span><span>命中利润 ¥{ticket.winning_profit_min_yuan.toFixed(2)}～¥{ticket.winning_profit_max_yuan.toFixed(2)}</span></footer>
