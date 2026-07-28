@@ -120,9 +120,11 @@
     root.hidden = false;
     root.innerHTML = `
       <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}${Number(plan.daily_score_bonus_points || 0) ? ` · 稳单奖励 +${Number(plan.daily_score_bonus_points).toFixed(0)}分` : ""}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
-      ${plan.anchor_status === "no_qualified_candidate" ? `<div class="plan-empty">今日无合格低波动2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "fallback_single" ? `<div class="plan-empty">2串1未通过稳健性筛选，已改用最低2元单关：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "fallback_parlay" ? `<div class="plan-empty">没有合格2串1且无合法单关，已改用最低2元普通2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "no_legal_wager" ? `<div class="plan-empty">今日没有合法可出票方案：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       <div class="ticket-grid">${(plan.tickets || []).map((ticket) => `<article>
-        <div><span>${ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
+        <div><span>${ticket.type === "single" ? "单关保底" : ticket.type === "fallback_parlay" ? "最低投入2串1" : ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
         <p>${ticket.legs.map((leg) => `${esc(leg.match_num || leg.match_id)} ${leg.market === "had" ? "胜平负" : "让球"}${leg.selections.map((outcome) => label(outcome, leg.market === "hhad")).join("+")}`).join(" × ")}</p>
         <small>${ticket.multiplier}倍 · ${ticket.line_count}条线 · 投入 ¥${Number(ticket.stake_yuan).toFixed(2)}</small>
         <footer><span>覆盖 ${pct(ticket.combined_coverage_probability)}</span><span>期望 ${ticket.expected_profit_yuan >= 0 ? "+" : ""}¥${Number(ticket.expected_profit_yuan).toFixed(2)}</span><span>命中利润 ¥${Number(ticket.winning_profit_min_yuan).toFixed(2)}～¥${Number(ticket.winning_profit_max_yuan).toFixed(2)}</span></footer>
