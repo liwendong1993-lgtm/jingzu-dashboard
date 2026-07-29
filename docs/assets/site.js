@@ -30,8 +30,12 @@
     (best, outcome, index, outcomes) => (Number(values[index] ?? -1) > Number(values[outcomes.indexOf(best)] ?? -1) ? outcome : best),
     "H",
   );
-  const hadDirection = (match) => ({ H: "胜", D: "平", A: "负" })[marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a])];
-  const hhadDirection = (match) => `让${({ H: "胜", D: "平", A: "负" })[marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])]}`;
+  const hadDirection = (match) => ({ H: "胜", D: "平", A: "负" })[
+    match.pick_had || marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a])
+  ];
+  const hhadDirection = (match) => `让${({ H: "胜", D: "平", A: "负" })[
+    match.pick_hhad || marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])
+  ]}`;
   const executionTier = (match) => match.analysis_detail?.execution_tier || (match.no_bet ? "C" : "B");
   const executionLabel = (match) => ({ A: "A重点推荐 · 1单位", B: "B值得关注 · 0.5单位", C: "C观望 · 0单位" })[executionTier(match)];
   const executionClass = (match) => `tier-${executionTier(match).toLowerCase()}`;
