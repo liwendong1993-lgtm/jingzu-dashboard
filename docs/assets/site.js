@@ -126,6 +126,7 @@
       <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}${Number(plan.daily_score_bonus_points || 0) ? ` · 稳单奖励 +${Number(plan.daily_score_bonus_points).toFixed(0)}分` : ""}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
       ${plan.anchor_status === "fallback_single" ? `<div class="plan-empty">2串1未通过稳健性筛选，已改用最低2元单关：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       ${plan.anchor_status === "fallback_parlay" ? `<div class="plan-empty">没有合格2串1且无合法单关，已改用最低2元普通2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "locked_existing" ? `<div class="plan-empty">已下注仓位保留，本次扩盘不重复出票：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       ${plan.anchor_status === "no_legal_wager" ? `<div class="plan-empty">今日没有合法可出票方案：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       <div class="ticket-grid">${(plan.tickets || []).map((ticket) => `<article>
         <div><span>${ticket.type === "single" ? "单关保底" : ticket.type === "fallback_parlay" ? "最低投入2串1" : ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
