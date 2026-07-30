@@ -68,10 +68,8 @@
     return `${match.edition === "final" ? "终版" : "初版"} v${match.revision || 1}`;
   };
   const strategyResult = (match) => {
-    if (match.score_points === 1) return { tone: "correct", symbol: "✓", label: "双项全中" };
-    if (match.score_points === 0.5) return { tone: "correct", symbol: "✓", label: "高亮命中" };
-    if (match.score_points === -0.5) return { tone: "partial", symbol: "•", label: "仅参考项命中" };
-    return { tone: "missed", symbol: "×", label: "两项均错" };
+    if (match.strategy_correct) return { tone: "correct", symbol: "✓", label: "终版联动命中" };
+    return { tone: "missed", symbol: "×", label: "终版联动错误" };
   };
   const strategyBadge = (match) => {
     const result = strategyResult(match);
@@ -225,13 +223,13 @@
   function renderResults(matches) {
     return `<section class="results-grid">
       <section class="panel">
-        <header class="panel-head"><div><h2>赛程赛果</h2><p>完赛后核对胜平负、让球结果和策略得分</p></div><span>${matches.filter(hasResult).length} 场完赛</span></header>
+        <header class="panel-head"><div><h2>赛程赛果</h2><p>终版联动是唯一成绩；单项仅作校准诊断</p></div><span>${matches.filter(hasResult).length} 场完赛</span></header>
         <div>${matches.map((match) => `<article class="result-row">
           <div class="list-id"><strong>${esc(match.match_num_str)}</strong><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
           <div class="scoreline"><span>${esc(match.home_team)}</span><strong>${hasResult(match) ? `${match.score_home} : ${match.score_away}` : "未完赛"}</strong><span>${esc(match.away_team)}</span></div>
           <div class="checks">${hasResult(match) ? `
-            <span class="check ${match.correct_had ? "correct" : "missed"}"><b>${match.correct_had ? "✓" : "×"}</b><span><small>胜平负</small><strong>${esc(match.had_outcome_label)}</strong></span></span>
-            <span class="check ${match.correct_hhad ? "correct" : "missed"}"><b>${match.correct_hhad ? "✓" : "×"}</b><span><small>让球</small><strong>${esc(match.hhad_outcome_label)}</strong></span></span>
+            <span class="check diagnostic"><b>·</b><span><small>HAD诊断</small><strong>${esc(match.pick_had_label)}→${esc(match.had_outcome_label)}</strong></span></span>
+            <span class="check diagnostic"><b>·</b><span><small>HHAD诊断</small><strong>${esc(match.pick_hhad_label)}→${esc(match.hhad_outcome_label)}</strong></span></span>
             ${match.reviewed ? strategyBadge(match) : ""}` : '<span class="check wait">等待赛果</span>'}
             ${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">▣ 查看复盘</button>` : ""}</div>
         </article>`).join("")}</div>
