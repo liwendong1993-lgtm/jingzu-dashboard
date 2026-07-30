@@ -51,7 +51,11 @@
       : { market: "had", outcome: hadOutcome };
   };
   const selectionClass = (match, market) => primarySelection(match).market === market ? `primary-selection ${executionClass(match)}` : "reference-selection";
-  const selectionCaption = (match, market, label) => `${primarySelection(match).market === market ? "核心方案" : "概率参考"} · ${label}`;
+  const hadAvailable = (match) => match.analysis_detail?.had_available !== false;
+  const selectionCaption = (match, market, label) => {
+    if (market === "had" && !hadAvailable(match)) return `模型推演 · ${label}（未开售）`;
+    return `${primarySelection(match).market === market ? "核心方案" : "概率参考"} · ${label}`;
+  };
   const handicap = (value) => value > 0 ? `+${value}` : String(value ?? "—");
   const hasResult = (match) => Number.isFinite(match.score_home) && Number.isFinite(match.score_away);
   const formatDate = (value) => {
@@ -68,8 +72,9 @@
     return `${match.edition === "final" ? "终版" : "初版"} v${match.revision || 1}`;
   };
   const strategyResult = (match) => {
-    if (match.strategy_correct) return { tone: "correct", symbol: "✓", label: "终版联动命中" };
-    return { tone: "missed", symbol: "×", label: "终版联动错误" };
+    const scope = match.analysis_detail?.settlement_scope === "hhad_only" ? "HHAD" : "联动";
+    if (match.strategy_correct) return { tone: "correct", symbol: "✓", label: `终版${scope}命中` };
+    return { tone: "missed", symbol: "×", label: `终版${scope}错误` };
   };
   const strategyBadge = (match) => {
     const result = strategyResult(match);
@@ -315,10 +320,10 @@
       </header>
       <div class="modal-body">
         ${review}
-        <section class="summary"><div><small>联动主情景</small><h3>${esc(match.pick_had_label)} / ${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>两种玩法来自同一可实现净胜球情景。</p></div><div class="summary-picks"><span class="${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span><span class="${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
+        <section class="summary"><div><small>${hadAvailable(match) ? "联动主情景" : "正式预测（仅HHAD）"}</small><h3>${hadAvailable(match) ? `${esc(match.pick_had_label)} / ` : ""}${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>${hadAvailable(match) ? "两种玩法来自同一可实现净胜球情景。" : "胜平负未开售，只按让球胜平负结算。"}</p></div><div class="summary-picks"><span class="${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span><span class="${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
         <section class="analysis-grid">
           <article class="analysis-box full"><h4>核心判断</h4><p>${esc(detail.rationale || match.rationale)}</p></article>
-          ${analysisProbability("胜平负概率", [match.prob_had_h, match.prob_had_d, match.prob_had_a])}
+          ${analysisProbability(hadAvailable(match) ? "胜平负概率" : "胜平负模型推演（未开售）", [match.prob_had_h, match.prob_had_d, match.prob_had_a])}
           ${analysisProbability(`${esc(handicap(match.goal_line))} 让球概率`, [match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])}
           ${combination}
           <article class="analysis-box full"><h4>关键维度</h4><div class="factor-grid">${factors || '<p>暂无维度说明</p>'}</div></article>
