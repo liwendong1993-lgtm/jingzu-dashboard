@@ -2,12 +2,6 @@
   "use strict";
 
   const state = { index: null, data: null, tab: "board", query: "" };
-  const stageMeta = {
-    pending: ["待分析", "已入库，等待预测"],
-    locked: ["预测已锁定", "初版或终版已归档"],
-    pending_review: ["完赛待复盘", "已有赛果，等待归因"],
-    reviewed: ["复盘完成", "指标与经验已沉淀"],
-  };
   const factorLabels = {
     strength_form: "实力与近期状态",
     squad_value: "阵容身价与有效比赛实力",
@@ -72,16 +66,14 @@
     return `${match.edition === "final" ? "终版" : "初版"} v${match.revision || 1}`;
   };
   const strategyResult = (match) => {
-    const scope = match.analysis_detail?.settlement_scope === "hhad_only" ? "HHAD" : "联动";
-    if (match.strategy_correct) return { tone: "correct", symbol: "✓", label: `终版${scope}命中` };
+    const scope = match.analysis_detail?.settlement_scope === "hhad_only" ? "（仅HHAD）" : "";
+    const correct = match.strategy_correct ?? match.primary_correct;
+    if (correct) return { tone: "correct", symbol: "✓", label: `终版${scope}命中` };
     return { tone: "missed", symbol: "×", label: `终版${scope}错误` };
   };
   const strategyBadge = (match) => {
     const result = strategyResult(match);
-    const points = typeof match.score_points === "number"
-      ? `${match.score_points > 0 ? "+" : ""}${match.score_points.toFixed(1)}`
-      : "—";
-    return `<span class="check ${result.tone}"><b>${result.symbol}</b><span><small>${esc(result.label)}</small><strong>${points}</strong></span></span>`;
+    return `<span class="check ${result.tone}"><b>${result.symbol}</b><span><small>研究主成绩</small><strong>${esc(result.label)}</strong></span></span>`;
   };
 
   function filteredMatches() {
@@ -92,24 +84,18 @@
     ].some((value) => String(value || "").toLowerCase().includes(query)));
   }
 
-  function probabilityBar(values) {
-    return `<div class="prob-bar" aria-label="胜平负概率">${values.map((value) => `<i style="width:${Math.max(0, (value || 0) * 100)}%"></i>`).join("")}</div>`;
-  }
-
   function renderMetrics() {
     const data = state.data;
     const matches = data.matches || [];
     const reviewed = matches.filter((match) => match.reviewed);
     const settled = matches.filter(hasResult);
-    const correct = reviewed.reduce((sum, match) => sum + Number(match.strategy_correct || 0), 0);
-    const score = reviewed.reduce((sum, match) => sum + Number(match.score_points || 0), 0);
     const primary = data.prediction_counts?.final
       ? `终版已锁 ${data.prediction_counts.final} 场`
       : `初版已完成 ${data.prediction_counts?.initial || 0} 场`;
     $("#metrics").innerHTML = `
       <article class="metric"><div><small>当日场次</small><strong class="accent">${matches.length}</strong></div><p>${esc(primary)}</p></article>
       <article class="metric"><div><small>已完赛 / 已复盘</small><strong class="green">${settled.length}<em> / ${reviewed.length}</em></strong></div><p>赛果归档后沉淀经验</p></article>
-      <article class="metric"><div><small>真实资金余额</small><strong class="amber">¥${Number(data.betting_plan?.bankroll_after ?? data.betting_plan?.bankroll_before ?? 100).toFixed(2)}</strong></div><p>${data.betting_plan ? `当日净利 ${Number.isFinite(data.betting_plan.net_profit_yuan) && data.betting_plan.net_profit_yuan >= 0 ? "+" : ""}${Number.isFinite(data.betting_plan.net_profit_yuan) ? Number(data.betting_plan.net_profit_yuan).toFixed(2) : "待结算"} 元` : "初始资金100元 · 目标1000元"}</p></article>
+      <article class="metric"><div><small>真实资金余额</small><strong class="amber">¥${Number(data.placed_bet?.bankroll_after ?? data.placed_bet?.bankroll_before ?? 100).toFixed(2)}</strong></div><p>${data.placed_bet ? `已确认出票 · 当日净利 ${Number.isFinite(data.placed_bet.net_profit_yuan) && data.placed_bet.net_profit_yuan >= 0 ? "+" : ""}${Number.isFinite(data.placed_bet.net_profit_yuan) ? Number(data.placed_bet.net_profit_yuan).toFixed(2) : "待结算"} 元` : "当日没有确认的真实出票"}</p></article>
       <article class="metric"><div><small>官方赔率快照</small><strong>${data.latest_snapshot ? "已同步" : "暂无"}</strong></div><p>${esc(formatTime(data.latest_snapshot))}</p></article>`;
   }
 
@@ -126,47 +112,82 @@
       : ({ H: "胜", D: "平", A: "负" })[outcome];
     root.hidden = false;
     root.innerHTML = `
-      <header><div><small>当日投注建议</small><h2>真实资金账本</h2><p>赛前余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 目标 ¥${Number(plan.target_bankroll || 1000).toFixed(0)}${Number(plan.daily_score_bonus_points || 0) ? ` · 稳单奖励 +${Number(plan.daily_score_bonus_points).toFixed(0)}分` : ""}</p></div><strong>${Number.isFinite(plan.bankroll_after) ? `赛后 ¥${Number(plan.bankroll_after).toFixed(2)}` : `风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%`}</strong></header>
-      ${plan.anchor_status === "fallback_single" ? `<div class="plan-empty">2串1未通过稳健性筛选，已改用最低2元单关：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
-      ${plan.anchor_status === "fallback_parlay" ? `<div class="plan-empty">没有合格2串1且无合法单关，已改用最低2元普通2串1：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      <header><div><small>当日投注建议</small><h2>建议方案（未确认不计资金）</h2><p>参考余额 ¥${Number(plan.bankroll_before || 0).toFixed(2)} · 建议投入 ¥${Number(plan.total_stake_yuan || 0).toFixed(2)} · 需另行确认出票</p></div><strong>风险 ${plan.bankroll_before ? (plan.total_stake_yuan / plan.bankroll_before * 100).toFixed(1) : "0.0"}%</strong></header>
+      ${plan.anchor_status === "fallback_single" ? `<div class="plan-empty">用户强制单关（不计系统成绩）：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "fallback_parlay" ? `<div class="plan-empty">用户强制2串1（不计系统成绩）：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "qualified_single" ? `<div class="plan-empty">合格正EV单关：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       ${plan.anchor_status === "locked_existing" ? `<div class="plan-empty">已下注仓位保留，本次扩盘不重复出票：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       ${plan.anchor_status === "no_legal_wager" ? `<div class="plan-empty">今日没有合法可出票方案：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
+      ${plan.anchor_status === "no_edge" ? `<div class="plan-empty">今日无稳健正EV，建议不投注：${esc(plan.anchor_reason || "未说明")}</div>` : ""}
       <div class="ticket-grid">${(plan.tickets || []).map((ticket) => `<article>
-        <div><span>${ticket.type === "single" ? "单关保底" : ticket.type === "fallback_parlay" ? "最低投入2串1" : ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
+        <div><span>${ticket.type === "single" ? (plan.anchor_status === "qualified_single" ? "正EV单关" : "用户强制单关") : ticket.type === "fallback_parlay" ? "用户强制2串1" : ticket.type === "anchor" ? "低波动" : ticket.type === "longshot" ? "高收益" : "成长"}</span><strong>${esc(ticket.label)}</strong></div>
         <p>${ticket.legs.map((leg) => `${esc(leg.match_num || leg.match_id)} ${leg.market === "had" ? "胜平负" : "让球"}${leg.selections.map((outcome) => label(outcome, leg.market === "hhad")).join("+")}`).join(" × ")}</p>
         <small>${ticket.multiplier}倍 · ${ticket.line_count}条线 · 投入 ¥${Number(ticket.stake_yuan).toFixed(2)}</small>
-        <footer><span>覆盖 ${pct(ticket.combined_coverage_probability)}</span><span>期望 ${ticket.expected_profit_yuan >= 0 ? "+" : ""}¥${Number(ticket.expected_profit_yuan).toFixed(2)}</span><span>命中利润 ¥${Number(ticket.winning_profit_min_yuan).toFixed(2)}～¥${Number(ticket.winning_profit_max_yuan).toFixed(2)}</span></footer>
+        <footer><span>覆盖 ${pct(ticket.combined_coverage_probability)}</span><span>压力测试EV ${Number(ticket.robust_expected_profit_yuan ?? ticket.expected_profit_yuan) >= 0 ? "+" : ""}¥${Number(ticket.robust_expected_profit_yuan ?? ticket.expected_profit_yuan).toFixed(2)}</span><span>命中利润 ¥${Number(ticket.winning_profit_min_yuan).toFixed(2)}～¥${Number(ticket.winning_profit_max_yuan).toFixed(2)}</span></footer>
       </article>`).join("")}</div>`;
+  }
+
+  const outcomeOrder = ["H", "D", "A"];
+  const outcomeLabel = (market, outcome) => market === "had"
+    ? ({ H: "胜", D: "平", A: "负" })[outcome]
+    : ({ H: "让胜", D: "让平", A: "让负" })[outcome];
+  const outcomeOdds = (match, market, outcome) => ({
+    had: { H: match.had_h, D: match.had_d, A: match.had_a },
+    hhad: { H: match.hhad_h, D: match.hhad_d, A: match.hhad_a },
+  })[market][outcome];
+  const outcomeProbability = (match, market, outcome) => ({
+    had: { H: match.prob_had_h, D: match.prob_had_d, A: match.prob_had_a },
+    hhad: { H: match.prob_hhad_h, D: match.prob_hhad_d, A: match.prob_hhad_a },
+  })[market][outcome];
+  const confidenceText = (match) => match.prediction_id
+    ? (match.confidence_label || ({ high: "高", medium: "中", low: "低" })[match.confidence || "low"])
+    : "待预测";
+
+  function renderOutcomeCell(match, market, outcome) {
+    const primary = match.prediction_id ? primarySelection(match) : null;
+    const picked = market === "had" ? match.pick_had : match.pick_hhad;
+    const recommended = Boolean(match.prediction_id && picked === outcome);
+    const isPrimary = Boolean(primary?.market === market && primary.outcome === outcome);
+    const confidence = match.prediction_id ? match.confidence || "low" : "none";
+    const line = handicap(match.goal_line);
+    const recommendation = recommended ? `，今日${isPrimary ? "核心" : "联动"}推荐，${confidenceText(match)}信心` : "";
+    return `<div class="outcome-cell${recommended ? ` is-recommended confidence-${confidence}` : ""}${isPrimary ? " is-primary" : ""}" aria-label="${esc(`${market === "had" ? "胜平负" : `${line} 让球`} ${outcomeLabel(market, outcome)}，赔率 ${odds(outcomeOdds(match, market, outcome))}${recommendation}`)}">
+      <div class="outcome-cell-head"><span>${outcomeLabel(market, outcome)}</span>${isPrimary ? "<em>核心</em>" : recommended ? "<em>联动</em>" : ""}</div>
+      <strong>${odds(outcomeOdds(match, market, outcome))}</strong>
+      <small>${market === "hhad" ? `${esc(line)} · ` : ""}模型 ${pct(outcomeProbability(match, market, outcome))}</small>
+    </div>`;
   }
 
   function renderCard(match) {
     const detail = match.analysis_detail ? "查看完整分析" : "暂无分析详情";
+    const confidence = match.prediction_id ? match.confidence || "low" : "none";
     return `
-      <button class="match-card" data-match="${match.match_id}" ${match.analysis_detail ? "" : "disabled"}>
-        <div class="card-top"><span>${esc(match.match_num_str)}</span><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
-        <div class="teams">
+      <article class="fixture-card">
+        <div class="fixture-card-head">
+          <div class="fixture-meta"><span>${esc(match.match_num_str)}</span><small>${esc(match.league_name)}</small><time>${esc(String(match.match_time || "").slice(0, 5))}</time></div>
+          <span class="confidence-badge confidence-${confidence}">${esc(match.prediction_id ? `${confidenceText(match)}信心` : confidenceText(match))}</span>
+        </div>
+        <div class="fixture-teams">
           <div><small>${esc(match.home_rank || "")}</small><strong title="${esc(match.home_team)}">${esc(match.home_team)}</strong></div>
-          <span>vs</span>
+          <span>${hasResult(match) ? `${match.score_home} : ${match.score_away}` : "vs"}</span>
           <div><small>${esc(match.away_rank || "")}</small><strong title="${esc(match.away_team)}">${esc(match.away_team)}</strong></div>
         </div>
-        <div class="picks">
-          <span class="pick ${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span>
-          <span class="pick ${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span>
+        <div class="odds-six-grid">${outcomeOrder.map((outcome) => renderOutcomeCell(match, "had", outcome)).join("")}${outcomeOrder.map((outcome) => renderOutcomeCell(match, "hhad", outcome)).join("")}</div>
+        <div class="fixture-card-foot">
+          <span class="badge blue">${esc(editionLabel(match))}</span>
+          ${match.prediction_id ? `<span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span>` : ""}
+          ${match.reviewed ? '<span class="badge green">已复盘</span>' : ""}
+          ${match.analysis_detail ? `<button class="detail-button" data-match="${match.match_id}">${esc(detail)}</button>` : `<small>${esc(detail)}</small>`}
         </div>
-        ${probabilityBar([match.prob_had_h, match.prob_had_d, match.prob_had_a])}
-        <div class="card-foot"><small>${esc(detail)}</small><span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span></div>
-      </button>`;
+      </article>`;
   }
 
   function renderBoard(matches) {
-    return `<section class="kanban">${Object.entries(stageMeta).map(([stage, meta]) => {
-      const group = matches.filter((match) => match.stage === stage);
-      const className = stage.replace("_", "-");
-      return `<section class="column ${className}">
-        <header class="column-head"><div><h2>${meta[0]}</h2><p>${meta[1]}</p></div><strong>${group.length}</strong></header>
-        <div class="column-body">${group.length ? group.map(renderCard).join("") : '<div class="column-empty">当前无比赛</div>'}</div>
-      </section>`;
-    }).join("")}</section>`;
+    const locked = matches.filter((match) => match.prediction_id).length;
+    return `<section class="match-board">
+      <header class="match-board-head"><div><h2>比赛预测</h2><p>六宫格依次展示胜、平、负与让胜、让平、让负；高亮项为今日推荐</p></div><span>▣ 预测已锁定 · ${locked}/${matches.length} 场</span></header>
+      <div class="match-board-grid">${matches.map(renderCard).join("")}</div>
+    </section>`;
   }
 
   function renderSchedule(matches) {
@@ -228,7 +249,7 @@
   function renderResults(matches) {
     return `<section class="results-grid">
       <section class="panel">
-        <header class="panel-head"><div><h2>赛程赛果</h2><p>终版联动是唯一成绩；单项仅作校准诊断</p></div><span>${matches.filter(hasResult).length} 场完赛</span></header>
+        <header class="panel-head"><div><h2>赛程赛果</h2><p>Primary 是研究主成绩；联动双中仅作联合校准</p></div><span>${matches.filter(hasResult).length} 场完赛</span></header>
         <div>${matches.map((match) => `<article class="result-row">
           <div class="list-id"><strong>${esc(match.match_num_str)}</strong><small>${esc(match.league_name)} · ${esc(String(match.match_time || "").slice(0, 5))}</small></div>
           <div class="scoreline"><span>${esc(match.home_team)}</span><strong>${hasResult(match) ? `${match.score_home} : ${match.score_away}` : "未完赛"}</strong><span>${esc(match.away_team)}</span></div>
@@ -308,8 +329,7 @@
       return item.source_url ? `<a href="${esc(item.source_url)}" target="_blank" rel="noopener">${body}</a>` : `<div>${body}</div>`;
     }).join("");
     const reviewResult = strategyResult(match);
-    const reviewPoints = typeof match.score_points === "number" ? `${match.score_points > 0 ? "+" : ""}${match.score_points.toFixed(1)} 分` : "";
-    const review = match.review_note ? `<article class="analysis-box full"><h4>赛后复盘 · ${esc(reviewResult.label)} ${reviewPoints}</h4><p>${esc(match.review_note)}</p>${match.review_lesson ? `<p><strong>候选经验：</strong>${esc(match.review_lesson.replace(/^候选经验[:：]\s*/, ""))}</p>` : ""}</article>` : "";
+    const review = match.review_note ? `<article class="analysis-box full"><h4>赛后复盘 · ${esc(reviewResult.label)}</h4><p>${esc(match.review_note)}</p>${match.review_lesson ? `<p><strong>候选经验：</strong>${esc(match.review_lesson.replace(/^候选经验[:：]\s*/, ""))}</p>` : ""}</article>` : "";
     const combination = detail.combination ? `<article class="analysis-box full"><h4>覆盖策略</h4><p>${esc(detail.combination.selections.map((item) => `${item.label} ${item.units}注`).join(" + "))}；覆盖概率 ${pct(detail.combination.covered_probability)}。${esc(detail.combination.rationale || "")}</p></article>` : "";
 
     $("#modalContent").innerHTML = `
