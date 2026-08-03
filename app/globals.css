@@ -155,6 +155,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .outcome-cell.is-primary { box-shadow: inset 0 0 0 3px currentColor, 0 0 0 1px rgba(255,255,255,.7); }
 .outcome-cell.is-diagnostic:not(.is-primary) { background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(91,108,133,.045) 7px 9px); }
 .outcome-cell.is-diagnostic:not(.is-primary) .outcome-cell-head em { color: #68778d; background: #e8edf3; }
+.score-forecast { margin-top: 9px; padding: 9px 10px; display: grid; grid-template-columns: 70px minmax(0,1fr); align-items: center; gap: 9px; border: 1px solid #e3e8ef; border-radius: 7px; background: #f8fafc; }
+.score-forecast > small { color: #68758a; font-size: 8px; font-weight: 800; }
+.score-forecast > div { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.score-forecast span { min-width: 0; padding: 6px 7px; display: grid; grid-template-columns: 15px 1fr auto; align-items: center; gap: 4px; border-radius: 5px; color: #203453; background: #fff; box-shadow: inset 0 0 0 1px #e0e6ee; font-variant-numeric: tabular-nums; }
+.score-forecast span em { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--blue); font-size: 7px; font-style: normal; font-weight: 850; }
+.score-forecast span strong { font-size: 11px; }
+.score-forecast span small { color: #7d899a; font-size: 8px; }
+.score-forecast > p { margin: 0; color: #929cab; font-size: 8px; }
 .probability-strip { height: 22px; border-radius: 4px; overflow: hidden; display: flex; background: #eef1f5; }
 .prob-segment { min-width: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 8px; font-weight: 700; white-space: nowrap; }
 .prob-0 { background: #2d6ae8; }
@@ -434,6 +442,9 @@ footer { max-width: calc(1680px - 72px); margin: 18px auto 0; padding: 18px 0 26
   .outcome-cell { min-height: 77px; padding-inline: 5px; }
   .outcome-cell > strong { font-size: 16px; }
   .outcome-cell > small { font-size: 7px; }
+  .score-forecast { grid-template-columns: 1fr; gap: 6px; }
+  .score-forecast span { padding: 6px 5px; grid-template-columns: 15px 1fr; }
+  .score-forecast span small { grid-column: 2; }
   .schedule-row { grid-template-columns: 80px 1fr; }
   .schedule-prediction, .schedule-status { grid-column: 1 / -1; }
   .result-list article { grid-template-columns: 1fr; gap: 10px; }

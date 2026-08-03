@@ -51,6 +51,10 @@ test("board uses flat six-cell match cards without stage columns", () => {
   assert.match(script, /joint.*diagnostic|diagnostic.*joint|\u8054\u5408\u51c0\u80dc\u7403\u8bca\u65ad/i);
   assert.doesNotMatch(script, /联动推荐/);
   assert.match(styles, /\.outcome-cell\.is-diagnostic:not\(\.is-primary\)/);
+  assert.match(script, /class="score-forecast"/);
+  assert.match(script, /match\.analysis_detail\?\.top_scores/);
+  assert.match(script, /最可能比分/);
+  assert.match(styles, /\.score-forecast > div \{ display: grid; grid-template-columns: repeat\(3/);
 });
 
 test("results score only the locked strategy and label HHAD-only matches", () => {

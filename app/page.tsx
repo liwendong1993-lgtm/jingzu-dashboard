@@ -84,6 +84,7 @@ type AnalysisDetail = {
     gate_result?: string;
   } | null;
   combination?: CombinationRecommendation | null;
+  top_scores?: Array<{ score: string; probability: number }>;
   info_cutoff?: string;
 };
 
@@ -516,6 +517,7 @@ function OutcomeCell({ match, market, outcome }: { match: Match; market: Predict
 
 function MatchBoardCard({ match, onOpenAnalysis }: { match: Match; onOpenAnalysis: (match: Match) => void }) {
   const confidence = match.prediction_id ? match.confidence || "low" : "none";
+  const topScores = match.analysis_detail?.top_scores || [];
   return (
     <article className="fixture-card">
       <div className="fixture-card-head">
@@ -536,6 +538,12 @@ function MatchBoardCard({ match, onOpenAnalysis }: { match: Match; onOpenAnalysi
       <div className="odds-six-grid">
         {marketOutcomes.map((outcome) => <OutcomeCell match={match} market="had" outcome={outcome} key={`had-${outcome}`} />)}
         {marketOutcomes.map((outcome) => <OutcomeCell match={match} market="hhad" outcome={outcome} key={`hhad-${outcome}`} />)}
+      </div>
+      <div className="score-forecast" aria-label="最可能的三个比分">
+        <small>最可能比分</small>
+        {topScores.length ? (
+          <div>{topScores.map((item, index) => <span key={item.score}><em>{index + 1}</em><strong>{item.score}</strong><small>{pct(item.probability)}</small></span>)}</div>
+        ) : <p>{match.prediction_id ? "暂无模型比分" : "预测锁定后展示"}</p>}
       </div>
       <div className="fixture-card-foot">
         <span className={`edition-badge ${match.edition || "none"}`}>{editionLabel(match)}</span>
