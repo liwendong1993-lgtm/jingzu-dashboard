@@ -192,6 +192,14 @@ main { padding-bottom: 12px; }
 .outcome-cell.is-primary { box-shadow: inset 0 0 0 3px currentColor, 0 0 0 1px rgba(255,255,255,.7); }
 .outcome-cell.is-diagnostic:not(.is-primary) { background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(91,108,133,.045) 7px 9px); }
 .outcome-cell.is-diagnostic:not(.is-primary) .outcome-cell-head em { color: #68778d; background: #e8edf3; }
+.score-forecast { margin-top: 9px; padding: 9px 10px; display: grid; grid-template-columns: 70px minmax(0,1fr); align-items: center; gap: 9px; border: 1px solid #e3e8ef; border-radius: 7px; background: #f8fafc; }
+.score-forecast > small { color: #68758a; font-size: 8px; font-weight: 800; }
+.score-forecast > div { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.score-forecast span { min-width: 0; padding: 6px 7px; display: grid; grid-template-columns: 15px 1fr auto; align-items: center; gap: 4px; border-radius: 5px; color: #203453; background: #fff; box-shadow: inset 0 0 0 1px #e0e6ee; font-variant-numeric: tabular-nums; }
+.score-forecast span em { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--blue); font-size: 7px; font-style: normal; font-weight: 850; }
+.score-forecast span strong { font-size: 11px; }
+.score-forecast span small { color: #7d899a; font-size: 8px; }
+.score-forecast > p { margin: 0; color: #929cab; font-size: 8px; }
 .fixture-card-foot { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 .fixture-card-foot .detail-button { margin-left: auto; }
 .fixture-card-foot > small { margin-left: auto; color: var(--muted); font-size: 8px; }
@@ -330,6 +338,9 @@ footer { padding: 22px 0 30px; display: flex; justify-content: center; flex-wrap
   .outcome-cell { min-height: 77px; padding-inline: 5px; }
   .outcome-cell > strong { font-size: 16px; }
   .outcome-cell > small { font-size: 7px; }
+  .score-forecast { grid-template-columns: 1fr; gap: 6px; }
+  .score-forecast span { padding: 6px 5px; grid-template-columns: 15px 1fr; }
+  .score-forecast span small { grid-column: 2; }
   .list-row { grid-template-columns: 75px 1fr; gap: 10px; }
   .list-picks, .list-state { grid-column: 1 / -1; }
   .list-state { align-items: flex-start; }

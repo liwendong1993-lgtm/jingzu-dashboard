@@ -171,6 +171,7 @@
   function renderCard(match) {
     const detail = match.analysis_detail ? "查看完整分析" : "暂无分析详情";
     const confidence = match.prediction_id ? match.confidence || "low" : "none";
+    const topScores = match.analysis_detail?.top_scores || [];
     return `
       <article class="fixture-card">
         <div class="fixture-card-head">
@@ -183,6 +184,10 @@
           <div><small>${esc(match.away_rank || "")}</small><strong title="${esc(match.away_team)}">${esc(match.away_team)}</strong></div>
         </div>
         <div class="odds-six-grid">${outcomeOrder.map((outcome) => renderOutcomeCell(match, "had", outcome)).join("")}${outcomeOrder.map((outcome) => renderOutcomeCell(match, "hhad", outcome)).join("")}</div>
+        <div class="score-forecast" aria-label="最可能的三个比分">
+          <small>最可能比分</small>
+          ${topScores.length ? `<div>${topScores.map((item, index) => `<span><em>${index + 1}</em><strong>${esc(item.score)}</strong><small>${pct(item.probability)}</small></span>`).join("")}</div>` : `<p>${match.prediction_id ? "暂无模型比分" : "预测锁定后展示"}</p>`}
+        </div>
         <div class="fixture-card-foot">
           <span class="badge blue">${esc(editionLabel(match))}</span>
           ${match.prediction_id ? `<span class="execution-badge ${executionClass(match)}">${esc(executionLabel(match))}</span>` : ""}
