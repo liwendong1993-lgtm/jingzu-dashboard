@@ -20,6 +20,6 @@ test("renders the Jingzu operations dashboard shell", async () => {
   assert.match(html, /<title>竞足指挥台<\/title>/i);
   assert.match(html, /竞足指挥台/);
   assert.match(html, /手动指令/);
-  assert.match(html, /预测 Kanban/);
+  assert.match(html, /今日比赛/);
   assert.match(html, /赔率走势/);
 });

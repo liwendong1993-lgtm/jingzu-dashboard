@@ -42,6 +42,20 @@ def copy_public_files(payload: dict) -> None:
             report["public_url"] = f"pdfs/{source.name}"
 
 
+def copy_standalone_reports() -> list[str]:
+    """Publish operational reports even when a date has no match row."""
+    source_root = PROJECT_ROOT / "reports"
+    copied: list[str] = []
+    if not source_root.is_dir():
+        return copied
+    for source in sorted(source_root.glob("*.md")):
+        target = REPORTS_ROOT / source.name
+        if not target.exists():
+            shutil.copy2(source, target)
+        copied.append(source.name)
+    return copied
+
+
 def sanitize(payload: dict) -> dict:
     # Execution history and writable endpoints are intentionally local-only.
     payload.pop("jobs", None)
@@ -83,9 +97,12 @@ def main() -> None:
         )
         exported_dates.append(date_value)
 
+    standalone_reports = copy_standalone_reports()
+
     index_payload = {
         "default_date": exported_dates[0],
         "dates": exported_dates,
+        "reports": standalone_reports,
         "generated_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds"),
     }
     (DATA_ROOT / "index.json").write_text(
