@@ -25,10 +25,10 @@
     "H",
   );
   const hadDirection = (match) => ({ H: "胜", D: "平", A: "负" })[
-    match.pick_had || marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a])
+    match.analysis_detail?.marginal_picks?.had || marginalOutcome([match.prob_had_h, match.prob_had_d, match.prob_had_a])
   ];
   const hhadDirection = (match) => `让${({ H: "胜", D: "平", A: "负" })[
-    match.pick_hhad || marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])
+    match.analysis_detail?.marginal_picks?.hhad || marginalOutcome([match.prob_hhad_h, match.prob_hhad_d, match.prob_hhad_a])
   ]}`;
   const executionTier = (match) => match.analysis_detail?.execution_tier || (match.no_bet ? "C" : "B");
   const executionLabel = (match) => ({ A: "A重点推荐 · 1单位", B: "B值得关注 · 0.5单位", C: "C观望 · 0单位" })[executionTier(match)];
@@ -45,10 +45,17 @@
       : { market: "had", outcome: hadOutcome };
   };
   const selectionClass = (match, market) => primarySelection(match).market === market ? `primary-selection ${executionClass(match)}` : "reference-selection";
+  const isMarketBaseline = (match) => match.analysis_detail?.model_opinion_status === "market_baseline_only"
+    || match.analysis_detail?.market_baseline_only
+    || match.analysis_detail?.research_level === "L0"
+    || match.analysis_detail?.market_clone;
   const hadAvailable = (match) => match.analysis_detail?.had_available !== false;
   const selectionCaption = (match, market, label) => {
     if (market === "had" && !hadAvailable(match)) return `模型推演 · ${label}（未开售）`;
-    return `${primarySelection(match).market === market ? "核心方案" : "概率参考"} · ${label}`;
+    if (primarySelection(match).market === market) {
+      return `${isMarketBaseline(match) ? "市场基线（不执行）" : "唯一核心方案"} · ${label}`;
+    }
+    return `概率参考 · ${label}`;
   };
   const handicap = (value) => value > 0 ? `+${value}` : String(value ?? "—");
   const hasResult = (match) => Number.isFinite(match.score_home) && Number.isFinite(match.score_away);
@@ -67,7 +74,7 @@
   };
   const strategyResult = (match) => {
     const scope = match.analysis_detail?.settlement_scope === "hhad_only" ? "（仅HHAD）" : "";
-    const correct = match.strategy_correct ?? match.primary_correct;
+    const correct = match.primary_correct ?? match.strategy_correct;
     if (correct) return { tone: "correct", symbol: "✓", label: `终版${scope}命中` };
     return { tone: "missed", symbol: "×", label: `终版${scope}错误` };
   };
@@ -146,13 +153,16 @@
   function renderOutcomeCell(match, market, outcome) {
     const primary = match.prediction_id ? primarySelection(match) : null;
     const picked = market === "had" ? match.pick_had : match.pick_hhad;
-    const recommended = Boolean(match.prediction_id && picked === outcome);
     const isPrimary = Boolean(primary?.market === market && primary.outcome === outcome);
+    const recommended = isPrimary;
+    const diagnostic = Boolean(match.prediction_id && picked === outcome && !isPrimary);
     const confidence = match.prediction_id ? match.confidence || "low" : "none";
     const line = handicap(match.goal_line);
-    const recommendation = recommended ? `，今日${isPrimary ? "核心" : "联动"}推荐，${confidenceText(match)}信心` : "";
-    return `<div class="outcome-cell${recommended ? ` is-recommended confidence-${confidence}` : ""}${isPrimary ? " is-primary" : ""}" aria-label="${esc(`${market === "had" ? "胜平负" : `${line} 让球`} ${outcomeLabel(market, outcome)}，赔率 ${odds(outcomeOdds(match, market, outcome))}${recommendation}`)}">
-      <div class="outcome-cell-head"><span>${outcomeLabel(market, outcome)}</span>${isPrimary ? "<em>核心</em>" : recommended ? "<em>联动</em>" : ""}</div>
+    const recommendation = isPrimary
+      ? `，${isMarketBaseline(match) ? "市场基线，不执行" : `唯一核心方案，${confidenceText(match)}信心`}`
+      : diagnostic ? "，联合净胜球诊断，不是推荐" : "";
+    return `<div class="outcome-cell${recommended ? ` is-recommended confidence-${confidence}` : ""}${isPrimary ? " is-primary" : ""}${diagnostic ? " is-diagnostic" : ""}" aria-label="${esc(`${market === "had" ? "胜平负" : `${line} 让球`} ${outcomeLabel(market, outcome)}，赔率 ${odds(outcomeOdds(match, market, outcome))}${recommendation}`)}">
+      <div class="outcome-cell-head"><span>${outcomeLabel(market, outcome)}</span>${isPrimary ? `<em>${isMarketBaseline(match) ? "基线" : "核心"}</em>` : diagnostic ? "<em>情景</em>" : ""}</div>
       <strong>${odds(outcomeOdds(match, market, outcome))}</strong>
       <small>${market === "hhad" ? `${esc(line)} · ` : ""}模型 ${pct(outcomeProbability(match, market, outcome))}</small>
     </div>`;
@@ -185,7 +195,7 @@
   function renderBoard(matches) {
     const locked = matches.filter((match) => match.prediction_id).length;
     return `<section class="match-board">
-      <header class="match-board-head"><div><h2>比赛预测</h2><p>六宫格依次展示胜、平、负与让胜、让平、让负；高亮项为今日推荐</p></div><span>▣ 预测已锁定 · ${locked}/${matches.length} 场</span></header>
+      <header class="match-board-head"><div><h2>比赛预测</h2><p>六宫格展示两个玩法的完整概率；只高亮唯一核心方案，“情景”仅作净胜球诊断</p></div><span>▣ 预测已锁定 · ${locked}/${matches.length} 场</span></header>
       <div class="match-board-grid">${matches.map(renderCard).join("")}</div>
     </section>`;
   }
@@ -340,7 +350,7 @@
       </header>
       <div class="modal-body">
         ${review}
-        <section class="summary"><div><small>${hadAvailable(match) ? "联动主情景" : "正式预测（仅HHAD）"}</small><h3>${hadAvailable(match) ? `${esc(match.pick_had_label)} / ` : ""}${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>${hadAvailable(match) ? "两种玩法来自同一可实现净胜球情景。" : "胜平负未开售，只按让球胜平负结算。"}</p></div><div class="summary-picks"><span class="${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span><span class="${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
+        <section class="summary"><div><small>${hadAvailable(match) ? "联合净胜球诊断" : "正式预测（仅HHAD）"}</small><h3>${hadAvailable(match) ? `${esc(match.pick_had_label)} / ` : ""}${esc(handicap(match.goal_line))}让${esc(match.pick_hhad_label)}</h3><p>${hadAvailable(match) ? "该格子只用于净胜球分布校准，不是第二条推荐，不参与核心命中结算。" : "胜平负未开售，只按让球胜平负结算。"}</p></div><div class="summary-picks"><span class="${selectionClass(match, "had")}"><small>${esc(selectionCaption(match, "had", "胜平负"))}</small><strong>${esc(hadDirection(match))}</strong></span><span class="${selectionClass(match, "hhad")}"><small>${esc(selectionCaption(match, "hhad", `${handicap(match.goal_line)} 让球`))}</small><strong>${esc(hhadDirection(match))}</strong></span></div></section>
         <section class="analysis-grid">
           <article class="analysis-box full"><h4>核心判断</h4><p>${esc(detail.rationale || match.rationale)}</p></article>
           ${analysisProbability(hadAvailable(match) ? "胜平负概率" : "胜平负模型推演（未开售）", [match.prob_had_h, match.prob_had_d, match.prob_had_a])}
