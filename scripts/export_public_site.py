@@ -59,6 +59,11 @@ def copy_standalone_reports() -> list[str]:
 def sanitize(payload: dict) -> dict:
     # Execution history and writable endpoints are intentionally local-only.
     payload.pop("jobs", None)
+    payload["reports"] = [
+        report
+        for report in payload.get("reports", [])
+        if not report.get("local_shadow")
+    ]
     payload["public_mode"] = True
     payload["generated_at"] = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
     for match in payload.get("matches", []):
