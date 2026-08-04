@@ -64,9 +64,13 @@ def sanitize(payload: dict) -> dict:
         for report in payload.get("reports", [])
         if not report.get("local_shadow")
     ]
+    for key in ("betting_plan", "placed_bet"):
+        if isinstance(payload.get(key), dict):
+            payload[key].pop("football_shadow_metrics", None)
     payload["public_mode"] = True
     payload["generated_at"] = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
     for match in payload.get("matches", []):
+        match.pop("football_shadow_preview", None)
         for key in (
             "league_id",
             "home_team_id",
