@@ -171,12 +171,20 @@
   function renderCard(match) {
     const detail = match.analysis_detail ? "查看完整分析" : "暂无分析详情";
     const confidence = match.prediction_id ? match.confidence || "low" : "none";
-    const topScores = match.analysis_detail?.top_scores || [];
+    const shadow = match.football_shadow_preview;
+    const shadowDirection = shadow?.value_direction;
+    const topScores = shadow?.top_scores || match.analysis_detail?.top_scores || [];
+    const shadowLabel = shadowDirection
+      ? `${shadowDirection.market === "had" ? "胜平负" : `${handicap(match.goal_line)} 让球`} ${outcomeLabel(shadowDirection.market, shadowDirection.outcome)} @ ${odds(shadowDirection.odds)}`
+      : "样本不足，仅展示比分参考";
     return `
       <article class="fixture-card">
         <div class="fixture-card-head">
           <div class="fixture-meta"><span>${esc(match.match_num_str)}</span><small>${esc(match.league_name)}</small><time>${esc(String(match.match_time || "").slice(0, 5))}</time></div>
-          <span class="confidence-badge confidence-${confidence}">${esc(match.prediction_id ? `${confidenceText(match)}信心` : confidenceText(match))}</span>
+          <div class="fixture-head-badges">
+            ${match.analysis_detail?.had_single_eligible ? '<span class="single-badge" title="中国体彩HAD支持单关">单</span>' : ""}
+            <span class="confidence-badge confidence-${confidence}">${esc(match.prediction_id ? `${confidenceText(match)}信心` : confidenceText(match))}</span>
+          </div>
         </div>
         <div class="fixture-teams">
           <div><small>${esc(match.home_rank || "")}</small><strong title="${esc(match.home_team)}">${esc(match.home_team)}</strong></div>
@@ -184,8 +192,12 @@
           <div><small>${esc(match.away_rank || "")}</small><strong title="${esc(match.away_team)}">${esc(match.away_team)}</strong></div>
         </div>
         <div class="odds-six-grid">${outcomeOrder.map((outcome) => renderOutcomeCell(match, "had", outcome)).join("")}${outcomeOrder.map((outcome) => renderOutcomeCell(match, "hhad", outcome)).join("")}</div>
+        ${shadow ? `<div class="football-shadow-callout ${shadow.history_eligible ? "eligible" : "reference"}">
+          <div><small>足球层影子投注 · 不计真实资金</small><strong>${esc(shadowLabel)}</strong></div>
+          <span>${shadowDirection ? `${shadow.history_eligible ? "门控通过" : "样本不足，仅实验"} · 独立概率 ${pct(shadowDirection.probability)} · 市场 ${pct(shadowDirection.market_probability)} · 差值 ${shadowDirection.edge_pp >= 0 ? "+" : ""}${Number(shadowDirection.edge_pp).toFixed(1)}pp · ${shadowDirection.single_eligible ? "可单关" : "仅可串关"}` : "目标赛事历史不足，不制造独立投注方向"}</span>
+        </div>` : ""}
         <div class="score-forecast" aria-label="最可能的三个比分">
-          <small>最可能比分</small>
+          <small>${shadow ? "足球层比分（影子）" : "最可能比分"}</small>
           ${topScores.length ? `<div>${topScores.map((item, index) => `<span><em>${index + 1}</em><strong>${esc(item.score)}</strong><small>${pct(item.probability)}</small></span>`).join("")}</div>` : `<p>${match.prediction_id ? "暂无模型比分" : "预测锁定后展示"}</p>`}
         </div>
         <div class="fixture-card-foot">
