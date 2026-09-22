@@ -88,7 +88,9 @@ def main() -> None:
 
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
     reset_generated_directory(REPORTS_ROOT)
-    reset_generated_directory(PDFS_ROOT)
+    # Published PDFs are historical artifacts. Keep them when a date is absent
+    # from the current dashboard query, then add any newly referenced PDFs.
+    PDFS_ROOT.mkdir(parents=True, exist_ok=True)
 
     latest = dashboard_server.query_dashboard(None)
     dates = latest.get("dates", [])
