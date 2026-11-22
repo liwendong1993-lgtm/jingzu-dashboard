@@ -32,6 +32,8 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: docs
+      - name: Wait for artifact propagation
+        run: sleep 10
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
